@@ -1,8 +1,13 @@
+#body {
+    background-image: linear-gradient(#ABC8E2,#C4D7ED,#ffffff)
+}
 #questionBox {
-    padding: 20px;
-    background-color: antiquewhite;
+    padding: 25px 20px;
+    background-color:  #E1E6FA;
     border-radius: 25px;
     margin-top: 200px;
+    min-height: 250px; 
+    max-height: 400px;
 }
 
 .question {
@@ -27,4 +32,10 @@
 .arrow-btn {
     background-color: transparent;
     border: 0;
+}
+
+.progress {
+    padding: 0 !important;
+    margin-top: 25px;
+    max-width: 50%;
 }

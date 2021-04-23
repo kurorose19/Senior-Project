@@ -1,2 +1,4 @@
-flaskApp/__pycache__
+flaskApp/__pycache__/
+flask_session/
 env
+flaskApp/*.pyc

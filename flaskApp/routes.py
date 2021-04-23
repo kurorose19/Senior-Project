@@ -1,8 +1,18 @@
-from flask import render_template, url_for, flash, redirect, request, session, g
+from flask import render_template, url_for, flash, redirect, request, session, g, jsonify
 from flaskApp import app, db, bcrypt
 from flaskApp.forms import *
 from flaskApp.models import *
 from flask_login import login_user, logout_user, current_user, login_required
+from random import randint
+from flask_session import Session
+import json
+
+app.debug = True
+app.config['SECRET_KEY'] = 'secret'
+app.config['SESSION_TYPE'] = 'filesystem'
+Session(app)
+
+# Global variables here if needed 
 
 @app.route("/")
 @app.route("/home")
@@ -10,8 +20,22 @@ def home():
     return render_template('index.html')
 
 @app.route("/quiz")
+@login_required
 def quiz():
-    return render_template('quiz.html')
+    return render_template('quiz.html', title='Quiz')
+
+@app.route("/results", methods=['GET'])
+def results():
+    if request.method == 'GET':
+        return render_template('results.html')
+
+@app.route("/results_post", methods=['POST'])
+def results_post():
+    if request.method == 'POST':
+        data = request.json
+        session['quizAvg'] = data['quizRes']
+        redirect = {'url': url_for('results')}
+        return jsonify(redirect)
 
 @app.route("/meditation")
 def meditation():
@@ -78,3 +102,43 @@ def logout():
 def profile():
     return render_template('profile.html', title=current_user.username + "'s Profile")
 
+@app.route("/settings", methods=['GET','POST'])
+@login_required
+def settings():
+    email = current_user.email
+    username = current_user.username
+    name = current_user.name
+    number = randint(100000,999999)
+    session['number'] = number
+    return render_template('settings.html', title=current_user.username + "'s Settings", email = email, username = username, name = name, number = number )
+
+@app.route("/settings_post", methods=['GET','POST'])
+@login_required
+def settings_post():    
+    if request.method == 'POST':
+        form = request.form
+        
+        if str(session.get('number')) == request.form['rand_number'].strip():
+            if request.form['password1'] != "" and request.form['password'] != "" and bcrypt.check_password_hash(current_user.password, request.form['password']) and (request.form['password1'] == request.form['password2']):
+                hashed_pwd = bcrypt.generate_password_hash(request.form['password1']).decode('utf-8')
+                current_user.password = hashed_pwd
+                db.session.commit()
+            elif (request.form['password'] != "") or (request.form['password1'] != "") or (request.form['password2'] != ""):
+                flash(f'Insufficient password information, settings not saved.', 'warning')
+                return redirect(url_for('home'))
+            if request.form['email'].strip() != current_user.email:
+                current_user.email = request.form['email'].strip()
+                db.session.commit()
+            if request.form['username'].strip() != current_user.username:
+                current_user.username = request.form['username'].strip()
+                db.session.commit()
+            if request.form['name'].strip() != current_user.name:
+                current_user.name = request.form['name'].strip()
+                db.session.commit()    
+            
+            flash(f'Settings successfully saved.', 'success')
+            return redirect(url_for('home'))
+        else:
+            flash(f'Incorrect confirmation number, settings not saved.', 'warning')
+            return redirect(url_for('home'))
+    return redirect(url_for('home'))
